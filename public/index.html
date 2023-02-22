@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background: #0f172a;
+            color: white;
+            font-family: "Poppins", sans-serif;
+            padding: 12px;
+        }
+
+        header {
+            padding: 10px 0;
+            display: grid;
+            place-items: center;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 14px;
+        }
+
+        main section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        main section div {
+            text-align: center;
+            border: 1px solid blue;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        main section div:hover {
+            border-color: cyan;
+        }
+
+        #second,
+        #loading,
+        #recommendations,
+        #recipe {
+            display: none;
+        }
+
+        span {
+            text-align: center;
+            background: blue;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 1px solid blue;
+
+        }
+
+        span:hover {
+            background: transparent;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Food Recommendations</h1>
+    </header>
+    <main>
+        <section id="first">
+            <div onclick="selectMeal('breakfast')">Breakfast</div>
+            <div onclick="selectMeal('lunch')">Lunch</div>
+            <div onclick="selectMeal('dinner')">Dinner</div>
+        </section>
+        <section id="second">
+            <div onclick="selectOptions('Vegetarian')">Vegetarian</div>
+            <div onclick="selectOptions('Vegan')">Vegan</div>
+            <div onclick="selectOptions('Bacon')">Bacon</div>
+            <div onclick="selectOptions('Eggs')">Eggs</div>
+            <div onclick="selectOptions('Pescatarian')">Pescatarian</div>
+            <!-- <div>Vegetarian</div> -->
+            <span>Generate</span>
+        </section>
+        <section id="loading">
+            Loading....
+        </section>
+        <section id="recommendations">
+
+        </section>
+        <section id="recipe">
+
+        </section>
+    </main>
+</body>
+<script>
+    let meal = null
+    let options = []
+    let mealOptions = []
+    const firstEle = document.getElementById('first')
+    const secondEle = document.getElementById('second')
+    const thirdEle = document.getElementById('loading')
+    const fourthElement = document.getElementById('recommendations')
+    const firthElement = document.getElementById('recipe')
+    const submitBtn = document.querySelector('span')
+    submitBtn.addEventListener('click', generateMealOptions)
+
+    function selectMeal(mealType) {
+        meal = mealType
+        firstEle.style.display = 'none'
+        secondEle.style.display = 'flex'
+        console.log(meal)
+    }
+
+    function selectOptions(option) {
+        options.push(option)
+        color()
+    }
+
+    function color() {
+        const optionsList = document.querySelectorAll('#second div')
+        optionsList.forEach(option => {
+            if (options.includes(option.innerText)) {
+                option.style.background = 'skyblue'
+            }
+        })
+    }
+
+    async function generateMealOptions() {
+        let request = `Can you please generate a list of 5 ${meal} recommendations that satisfy the following requirements: `
+        options.forEach(option => {
+            request += `${option} `
+        })
+
+        console.log(request)
+        try {
+            secondEle.style.display = 'none'
+            thirdEle.style.display = 'flex'
+            const res = await fetch('http://localhost:1337/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 'message': request })
+            })
+            const { response } = await res.json()
+            thirdEle.style.display = 'none'
+            mealOptions = response.split('\n').slice(1)
+            mealOptions.forEach((meal, i) => {
+                if (meal.replaceAll(' ', '')) {
+                    fourthElement.innerHTML += (
+                        `<div onclick="selectRecipe(${i})">${meal}</div>`
+                    )
+                }
+            })
+            fourthElement.style.display = 'flex'
+            console.log(response)
+        } catch (err) {
+            console.log(err.message)
+        }
+    }
+
+    async function selectRecipe(i) {
+        const generateRecipe = `Can you please generate a recipe for: ${mealOptions[i]}`
+        try {
+            fourthElement.style.display = 'none'
+            thirdEle.style.display = 'flex'
+            const res = await fetch('http://localhost:1337/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 'message': generateRecipe })
+            })
+            const { response } = await res.json()
+            thirdEle.style.display = 'none'
+            firthElement.innerHTML = `<p>${response}</p>`
+            firthElement.style.display = 'flex'
+            console.log(response)
+        } catch (err) {
+            console.log(err.message)
+        }
+    }
+
+</script>
+
+</html>

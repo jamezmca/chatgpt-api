@@ -1,0 +1,7 @@
+###
+POST http://localhost:1337/chat
+Content-Type: application/json
+
+{
+    "message": "what should I have for breakfast?"
+}
